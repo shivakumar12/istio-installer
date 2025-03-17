@@ -1,0 +1,331 @@
+<form>
+  <init>
+    <set token="default_filter">method=*</set>
+    <set token="api_filter">api IN (Intuit.platform.ebs.enterprisebilling,Intuit.platform.ebs.account,Intuit.tech.ebs.order,Intuit.platform.ebs.entitlement,Intuit.platform.ebpiproductcatalogproject.enterpriseproductcatalog10-1,Intuit.delivery.productregistrationservices,Intuit.platform.UniReg,Intuit.billingcomm.billing.billingsubscription101)</set>
+  </init>
+  <label>Desktop Billing Service Status</label>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="time_filter" searchWhenChanged="true">
+      <label>Define search period</label>
+      <default>
+        <earliest>-4h@m</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="service_filter" searchWhenChanged="true">
+      <label>Filter by Service</label>
+      <choice value="api IN (Intuit.platform.ebs.enterprisebilling,Intuit.platform.ebs.account,Intuit.tech.ebs.order,Intuit.platform.ebs.entitlement,Intuit.delivery.productregistrationservices,Intuit.platform.UniReg)">All</choice>
+      <choice value="api IN (Intuit.platform.ebs.enterprisebilling,Intuit.platform.ebs.account,Intuit.tech.ebs.order,Intuit.platform.ebs.entitlement,Intuit.platform.ebpiproductcatalogproject.enterpriseproductcatalog10-1)">EBPi/OFM/ERS (Enterprise Services)</choice>
+      <choice value="api IN (Intuit.platform.ebs.enterprisebilling,Intuit.platform.ebs.account,Intuit.tech.ebs.order,Intuit.platform.ebs.entitlement,Intuit.platform.ebpiproductcatalogproject.enterpriseproductcatalog10-1) AND ( routeInboundURI=&quot;*ABCs*&quot; OR routeInboundURI=&quot;*intuit*&quot;  OR routeInboundURI=&quot;*Impl*&quot; )">OFM (Across Enterprise Services)</choice>
+      <choice value="api IN (Intuit.platform.ebpiproductcatalogproject.enterpriseproductcatalog10-1)">EBPi Catalog</choice>
+      <choice value="api IN (Intuit.platform.ebs.enterprisebilling)">EBPi/OFM Billing</choice>
+      <choice value="api IN (Intuit.tech.ebs.order)">EBPi Orders</choice>
+      <choice value="api IN (Intuit.platform.ebs.account)">EBPi/OFM Account</choice>
+      <choice value="api IN (Intuit.platform.ebs.entitlement)">EBPi/OFM/ERS Entitlement</choice>
+      <choice value="api IN (Intuit.delivery.productregistrationservices)">EPR</choice>
+      <choice value="api IN (Intuit.platform.UniReg)">EPR Legacy</choice>
+      <choice value="api IN (Intuit.platform.eis.eis)">EIS</choice>
+      <choice value="api IN (Intuit.billingcomm.billing.billingsubscription101)">BRM</choice>
+      <default>api IN (Intuit.platform.ebs.enterprisebilling,Intuit.platform.ebs.account,Intuit.tech.ebs.order,Intuit.platform.ebs.entitlement,Intuit.delivery.productregistrationservices,Intuit.platform.UniReg)</default>
+    </input>
+    <input type="dropdown" token="api_filter" searchWhenChanged="true">
+      <label>Filter by API</label>
+      <choice value="*">All</choice>
+      <fieldForLabel>uri_method</fieldForLabel>
+      <fieldForValue>uri_filter</fieldForValue>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search>
+        <query>index=apigateway-prdidx AND $service_filter$ AND $default_filter$ | eval uri_method =method+ " - " + routeInboundURI| eval uri_filter ="method=" + method + " AND routeInboundURI=" + routeInboundURI  | table uri_method,uri_filter| dedup uri_method,uri_filter| sort uri_method</query>
+      </search>
+    </input>
+    <input type="dropdown" token="app_filter" searchWhenChanged="true">
+      <label>Filter by Client App</label>
+      <choice value="txId=*">All</choice>
+      <fieldForLabel>app</fieldForLabel>
+      <fieldForValue>app_filter</fieldForValue>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search>
+        <query>index=apigateway-prdidx AND $service_filter$  AND $api_filter$ AND $default_filter$ | eval app_filter="app=" + app | table app,app_filter| dedup app| sort app</query>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+      </search>
+    </input>
+    <input type="dropdown" token="status_filter" searchWhenChanged="true">
+      <label>Filter by response code</label>
+      <choice value="status=*">All</choice>
+      <choice value="status=5*">5xx</choice>
+      <choice value="status=4*">4xx</choice>
+      <choice value="status=3*">3xx</choice>
+      <choice value="status=2*">2xx</choice>
+      <default>status=*</default>
+    </input>
+    <input type="dropdown" token="span_filter" searchWhenChanged="true">
+      <label>Span</label>
+      <choice value="1m">1m</choice>
+      <choice value="5m">5m</choice>
+      <choice value="10m">10m</choice>
+      <choice value="1h">1h</choice>
+      <choice value="24h">1d</choice>
+      <default>5m</default>
+    </input>
+    <html>
+       <p> Dashboard Links:
+       <br/>
+        <a target="_blank" href="https://ip.scheduled.splunk.intuit.com/en-US/app/search/dbill_service_status">Desktop Billing Service </a>
+         <br/>
+        <a target="_blank" href="https://ip.scheduled.splunk.intuit.com/en-US/app/search/dbill_service_5xx_summary">Desktop Billing Service 5XX Summary Home</a>
+        <br/>
+        <a target="_blank" href="https://ip.scheduled.splunk.intuit.com/en-US/app/search/desktop_billing_service_latency">Desktop Billing Service Latency</a>
+        <br/>
+        
+        <a target="_blank" href="https://t4i.nonprod.splunk.intuit.com/en-US/app/search/ten_onedashboardlinks">Desktop Billing Dashboard Home</a>
+        <br/>
+       </p>
+     </html>
+  </fieldset>
+  <row>
+    <panel>
+      <chart>
+        <title>5xx Traffic</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND status=5*| timechart span=$span_filter$ count(status) by status</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.fieldColors">{"500": 0xFF0000, "40*": 0xFF9900, "200":0x009900, "204":0x009200}</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>5xx Traffic by API</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND status=5*|eval apiname=method+"-"+routeInboundURI|  timechart span=$span_filter$ count(status) by apiname</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Status Code Timeline</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$| timechart span=$span_filter$ count(status) by status</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.fieldColors">{"500": 0xFF0000, "40*": 0xFF9900, "200":0x009900, "204":0x009200}</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <table>
+        <title>Status Code Details</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$ |stats count by status | sort by status asc</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="totalsRow">false</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Traffic by APIs</title>
+        <search>
+          <done>
+            <condition match=" 'job.resultCount' &gt; 0">
+              <set token="totalALL">$result._total$</set>
+              <set token="label">$result._total$</set>
+            </condition>
+            <condition>
+              <set token="totalAll">"No Data"</set>
+              <set token="label">"No Data"</set>
+            </condition>
+          </done>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$ | eval routeInboundURI=replace(routeInboundURI, "/v1/\*", req) | eval routeInboundURI=replace(routeInboundURI, "PUT:", "") | eval routeInboundURI=replace(routeInboundURI, "GET:", "") | eval routeInboundURI=replace(routeInboundURI, "POST:", "") | eval apiname=method+"-"+routeInboundURI |  chart count by apiname | eventstats sum(count) as _total | eval app_slice = apiname+" (" + count + ")" | fields app_slice, count | sort count desc</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>TPS</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$| eval cnt=1 |timechart span=1m per_second(cnt) as TPS</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+          <refresh>1m</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Traffic timeline by APIs</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$ | eval routeInboundURI=replace(routeInboundURI, "/v1/\*", req) | eval routeInboundURI=replace(routeInboundURI, "PUT:", "") | eval routeInboundURI=replace(routeInboundURI, "GET:", "") | eval routeInboundURI=replace(routeInboundURI, "POST:", "") | eval apiname=method+"-"+routeInboundURI  | timechart  count   by apiname</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Traffic timeline by app (client)</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$ | eval apiname=method+"-"+routeInboundURI  | timechart  count   by app</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Traffic by xHost</title>
+        <search>
+          <done>
+            <condition match=" 'job.resultCount' &gt; 0">
+              <set token="totalALL">$result._total$</set>
+              <set token="label">$result._total$</set>
+            </condition>
+            <condition>
+              <set token="totalAll">"No Data"</set>
+              <set token="label">"No Data"</set>
+            </condition>
+          </done>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$ | eval routeInboundURI=replace(routeInboundURI, "/v1/\*", req) | eval routeInboundURI=replace(routeInboundURI, "PUT:", "") | eval routeInboundURI=replace(routeInboundURI, "GET:", "") | eval routeInboundURI=replace(routeInboundURI, "POST:", "") | eval apiname=method+"-"+routeInboundURI |  chart count by  app</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>TPS by app</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$| eval cnt=1 |timechart span=1m per_second(cnt) as TPS by app</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+          <refresh>1m</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>APIs and status codes</title>
+        <search>
+          <query>index=apigateway* AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$ | eval routeInboundURI=replace(routeInboundURI, "/v1/\*", req) | eval routeInboundURI=replace(routeInboundURI, "PUT:", "") | eval routeInboundURI=replace(routeInboundURI, "GET:", "") | eval routeInboundURI=replace(routeInboundURI, "POST:", "") | eval apiname=method+"-"+routeInboundURI |  eval failed=if(status&gt;499 AND status&lt;600,1,0) |  eval failed4xx=if(status&gt;399 AND status&lt;500,1,0)  |  eval failed3xx=if(status&gt;299 AND status&lt;400,1,0)| eval success=1 | stats sum(failed4xx) as FAILED4xx,sum(failed3xx) as FAILED3xx,sum(failed) as FAILED, sum(success) as Total by apiname  | eval percent=((FAILED/Total)*100) | eval percent_fail=round(percent,2) | rename percent_fail as "5xx rate (FCI)" | rename FAILED as "5xx errors returned" | eval percent4xx=((FAILED4xx/Total)*100) | eval percent_fail4xx=round(percent4xx,2) | rename percent_fail4xx as "4xx rate" | rename FAILED4xx as "4xx errors returned" | eval percent3xx=((FAILED3xx/Total)*100) | eval percent_fail3xx=round(percent3xx,2) | rename percent_fail3xx as "3xx rate" | rename FAILED3xx as "3xx errors returned"  | table apiname, "3xx rate", "3xx errors returned" ,"4xx rate", "4xx errors returned","5xx rate (FCI)", "5xx errors returned", Total | sort "5xx rate (FCI)" desc</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+        </search>
+        <option name="count">20</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>API and latency ( in Milli Seconds)</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$ | eval routeInboundURI=replace(routeInboundURI, "PUT:", "") | eval routeInboundURI=replace(routeInboundURI, "GET:", "") | eval routeInboundURI=replace(routeInboundURI, "POST:", "") | eval apiname=method+"-"+routeInboundURI |stats count as traffic, avg(txTime) as avg_time,p50(txTime) as p50_time ,p90(txTime) as p90_time,p99(txTime) as p99_time,max(txTime)  as  max_time, by apiname|  eval round_avg_time=round(avg_time,2) |  eval round_p99_time=round(p99_time,2)|  eval round_p90_time=round(p90_time,2)|  eval round_p50_time=round(p50_time,2)|  eval round_max_time=round(max_time,2)|rename traffic as "Requests"|rename round_avg_time as "Avg"|rename apiname as "API"|rename round_p50_time as "TP50"|rename round_p90_time as "TP90"|rename round_p99_time as "TP99"|rename round_max_time as "Max"| table API,"Requests","Avg","TP50","TP50","TP90","TP99","Max"|sort desc  round_p99_time</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+        </search>
+        <option name="count">20</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>API and latency over timeline ( in Milli Seconds)</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$ | eval routeInboundURI=replace(routeInboundURI, "PUT:", "") | eval routeInboundURI=replace(routeInboundURI, "GET:", "") | eval routeInboundURI=replace(routeInboundURI, "POST:", "") | eval apiname=method+"-"+routeInboundURI |timechart span=1d avg(txTime) as avg_time,p50(txTime) as p50_time ,p90(txTime) as p90_time,p99(txTime) as p99_time,max(txTime)  as  max_time</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+        </search>
+        <option name="charting.chart">area</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <table>
+        <title>API and latency over timeline ( in Milli Seconds)</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$ | eval routeInboundURI=replace(routeInboundURI, "PUT:", "") | eval routeInboundURI=replace(routeInboundURI, "GET:", "") | eval routeInboundURI=replace(routeInboundURI, "POST:", "") | eval apiname=method+"-"+routeInboundURI |timechart span=1d avg(txTime) as avg_time,p50(txTime) as p50_time ,p90(txTime) as p90_time,p99(txTime) as p99_time,max(txTime)  as  max_time</query>
+          <earliest>$time_filter.earliest$</earliest>
+          <latest>$time_filter.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>TPS per API</title>
+        <search>
+          <query>index=apigateway-prdidx AND  $default_filter$ AND  $service_filter$ AND $api_filter$  AND $app_filter$  AND $status_filter$ | eval routeInboundURI=replace(routeInboundURI, "PUT:", "") | eval routeInboundURI=replace(routeInboundURI, "GET:", "") | eval routeInboundURI=replace(routeInboundURI, "POST:", "") | eval apiname=method+"-"+routeInboundU
